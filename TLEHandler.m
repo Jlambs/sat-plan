@@ -17,39 +17,34 @@ classdef TLEHandler < handle
     methods
 
         function addTLE(obj, tle_object)
-
-            % Append new TLE object to list of TLE handles
-            obj.TLEHandles(end+1) = tle_object;
-
-        end
-
-        function addTLEFromFile(obj, file_name)%, name_or_catalog_num)
-            % File name checking could be done here or in TLE factory
-            [new_TLE, is_valid] = obj.TLEFactory.createTLEFromFile(file_name);
-            if is_valid
-                obj.addTLE(new_TLE);
-            else
-                % Maybe the TLE factory will print this message, or give
-                % more informative errors
-                fprintf('Could not create valid TLE from %s. Skipping adding...\n', file_name)
+            % Adds TLEs to TLE list
+            for i = 1:size(tle_object, 1)
+                obj.TLEHandles(end + 1) = tle_object(i);
             end
         end
 
-        function addTLEFromURL(obj, url_string)%, name_or_catalog_num)
-            % URL checking could be done here or in TLE factory
-            [new_TLE, is_valid] = obj.TLEFactory.createTLEFromURL(url_string);
-            if is_valid
-                obj.addTLE(new_TLE);
-            else
-                % Maybe the TLE factory will print this message, or give
-                % more informative errors
-                fprintf('Could not create valid TLE from %s. Skipping adding...\n', url_string)
+        function addTLEFromFile(obj, file_name, ignore_checksum, TLE_to_load)
+            % Adds TLE from file 
+            TLEs = obj.TLEFactory.createTLEFromFile(file_name, ignore_checksum, TLE_to_load);
+
+            % Only add TLE if the TLE list is not empty
+            if ~isempty(TLEs)
+                obj.addTLE(TLEs)
+            end
+        end
+
+        function addTLEFromURL(obj, url_string, ignore_checksum, sat_num_or_name)
+            % Adds TLE from URL
+            TLE_to_add = obj.TLEFactory.createTLEFromURL(url_string, ignore_checksum, sat_num_or_name);
+
+            % Only add TLE if the TLE list is not empty
+            if ~isempty(TLE_to_add)
+                obj.addTLE(TLE_to_add);
             end
         end
 
         function tle_handles = getTLEByName(obj, tle_name_str, return_all_instances)
-            % Note: this function can't be used if the TLE doesn't have a
-            % name defined, there may be a better way to do this
+            % Find TLE based on name
 
             % Loop through currently stored TLEs
             total_num_tles = length(obj.TLEHandles);
@@ -79,13 +74,15 @@ classdef TLEHandler < handle
 
         end
 
-        function removeTLE(obj, tle_handle)
+        function removeTLE(obj, tle_handle, TLE_index)
+            % Delete from TLE list
+            obj.TLEHandles(TLE_index) = [];
 
-            obj.TLEHandles(isequal(TLEs, tle_handle)) = [];
-
-            %fprintf('some sort of output statement here')
+            % Message
+            warning("%s's TLE has been deleted", strtrim(tle_handle.SatelliteName))
         end
 
+        % SEBASTIAN'S COMMENT: I have not touched/used this funct, should we keep it?
         function removeTLEByName(obj, tle_name_str, delete_all_instances)
             % Note: this function can't be used if the TLE doesn't have a
             % name defined, there may be a better way to do this
@@ -124,6 +121,9 @@ classdef TLEHandler < handle
 
         end
 
+        % SEBASTIAN'S COMMENT: I haven't touched/used this funct, should we
+        % keep it?
+
         % FIXME: needs better name, and possibly to be merged with a
         % different function of a similar nature (see
         % validateAllTLEFormats)
@@ -131,73 +131,73 @@ classdef TLEHandler < handle
             tle_handle = obj.getTLEByName(tle_name_str);
             tle_is_valid = tle_handle.FormatValid;
         end
-
-        function [all_tles_valid, invalid_tles] = validateAllTLEFormats(obj)
-            
-            % Automatically return invalid if no TLEs are loaded
-            total_num_tles = length(obj.TLEHandles);
-            if total_num_tles == 0
-                all_tles_valid = false;
-                invalid_tles = [];
-                return
-            end
-            
-            % Loop through currently stored TLEs
-            total_num_tles = length(obj.TLEHandles);
-            tles_valid = false(1, total_num_tles);  % assume it's not valid until we confirm otherwise
-            for i = 1:total_num_tles
-
-                % Check validity
-                current_TLE_is_valid = obj.TLEHandles(i).FormatValid;
-
-                % Flag as valid
-                if current_TLE_is_valid
-                    tles_valid(i) = true;
-                end
-
-            end
-
-            % Check if all TLEs are valid
-            all_tles_valid = all(tles_valid);
-
-            % Return flagged TLEs
-            invalid_tles = obj.TLEHandles(tles_valid);
-
-        end
-
-        function [all_tles_valid, invalid_tles] = validateAllTLEChecksums(obj)
-            
-            % Automatically return invalid if no TLEs are loaded
-            total_num_tles = length(obj.TLEHandles);
-            if total_num_tles == 0
-                all_tles_valid = false;
-                invalid_tles = [];
-                return
-            end
-
-            % Loop through currently stored TLEs
-            tles_valid = false(1, total_num_tles);
-            for i = 1:total_num_tles
-
-                % Check validity
-                current_TLE_is_valid = obj.TLEHandles(i).ChecksumValid;
-
-                % Flag as valid
-                if current_TLE_is_valid
-                    tles_valid(i) = true;
-                end
-
-            end
-
-            % Check if all TLEs are valid
-            all_tles_valid = all(tles_valid);
-
-            % Return flagged TLEs
-            invalid_tles = obj.TLEHandles(tles_valid);
-            
-        end
+% 
+%         function [all_tles_valid, invalid_tles] = validateAllTLEFormats(obj)
+%             
+%             % Automatically return invalid if no TLEs are loaded
+%             total_num_tles = length(obj.TLEHandles);
+%             if total_num_tles == 0
+%                 all_tles_valid = false;
+%                 invalid_tles = [];
+%                 return
+%             end
+%             
+%             % Loop through currently stored TLEs
+%             total_num_tles = length(obj.TLEHandles);
+%             tles_valid = false(1, total_num_tles);  % assume it's not valid until we confirm otherwise
+%             for i = 1:total_num_tles
+% 
+%                 % Check validity
+%                 current_TLE_is_valid = obj.TLEHandles(i).FormatValid;
+% 
+%                 % Flag as valid
+%                 if current_TLE_is_valid
+%                     tles_valid(i) = true;
+%                 end
+% 
+%             end
+% 
+%             % Check if all TLEs are valid
+%             all_tles_valid = all(tles_valid);
+% 
+%             % Return flagged TLEs
+%             invalid_tles = obj.TLEHandles(tles_valid);
+% 
+%         end
+% 
+%         function [all_tles_valid, invalid_tles] = validateAllTLEChecksums(obj)
+%             
+%             % Automatically return invalid if no TLEs are loaded
+%             total_num_tles = length(obj.TLEHandles);
+%             if total_num_tles == 0
+%                 all_tles_valid = false;
+%                 invalid_tles = [];
+%                 return
+%             end
+% 
+%             % Loop through currently stored TLEs
+%             tles_valid = false(1, total_num_tles);
+%             for i = 1:total_num_tles
+% 
+%                 % Check validity
+%                 current_TLE_is_valid = obj.TLEHandles(i).ChecksumValid;
+% 
+%                 % Flag as valid
+%                 if current_TLE_is_valid
+%                     tles_valid(i) = true;
+%                 end
+% 
+%             end
+% 
+%             % Check if all TLEs are valid
+%             all_tles_valid = all(tles_valid);
+% 
+%             % Return flagged TLEs
+%             invalid_tles = obj.TLEHandles(tles_valid);
+%             
+%         end
         
-        function saveTLEToFile(obj, tle_name_to_save, default_file_name, include_name_header, encoding_format, show_save_dialogue)
+          function saveTLEToFile(obj, tle_name_to_save, default_file_name, include_name_header, encoding_format, show_save_dialogue)
             % SAVETLETOFILE Helper function to save the TLE data to a file
             %   Detailed explanation goes here
 
@@ -294,8 +294,9 @@ classdef TLEHandler < handle
         
         end
 
-        function satellite_table = generateLoadedSatelliteTable()
-            satellite_table = table();
+        function addTLEfromKeplerianElements(obj, satellite_name, semi_major_axis, eccentricity, inclination, RAAN, arg_of_periapsis, mean_motion)
+            TLE = obj.TLEFactory.createTLEFromKeplerianElements(satellite_name, semi_major_axis, eccentricity, inclination, RAAN, arg_of_periapsis, mean_motion);
+            obj.addTLE(TLE)
         end
 
     end
