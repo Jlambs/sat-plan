@@ -2,7 +2,7 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
     % TLE Object that defines a single Two-Line-Element (TLE) set, which
     % defines the orbital properties of a satellite.
     %   Detailed explanation goes here
-    
+
     properties
         SatelliteName char = ''
 
@@ -22,7 +22,7 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
         EpochYear double = 0   % integer? necessary?
         EpochDay double = 0  % necessary?
 
-        % Added vars for GUI 
+        % Added vars for GUI
         FirstDerivofMeanMotion char = 0
         SecondDerivofMeanMotion char = 0
         EphemerisType double = 0
@@ -46,30 +46,30 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
         BStar char = 0
         MeanOrbitalPeriod double = 0
     end
-    
+
     % Read-only properties
     properties (SetAccess = private, GetAccess = public)
         FormatValid logical = false
         ChecksumsValid logical = false
     end
 
-    
+
     methods
         % Update: this class will not have a constructor, since you can
         % build a TLE object from either TLE lines *or* Keplerian elements.
         % Instead, we will initialize a blank TLE object and assign
         % variables afterwards, checking validity along the way.
-%         function obj = TLE(satellite_name, line_1, line_2)
-%             % TLE Construct an instance of this class
-%             %   Detailed explanation goes here
-%             obj.SatelliteName = satellite_name;
-%             obj.TLELine1 = line_1;
-%             obj.TLELine2 = line_2;
-% %             obj.IgnoreChecksum = ignore_checksum;
-% 
-%             % TODO: figure out when and where is best to do this
-%             obj.validateTLE();
-%         end
+        %         function obj = TLE(satellite_name, line_1, line_2)
+        %             % TLE Construct an instance of this class
+        %             %   Detailed explanation goes here
+        %             obj.SatelliteName = satellite_name;
+        %             obj.TLELine1 = line_1;
+        %             obj.TLELine2 = line_2;
+        % %             obj.IgnoreChecksum = ignore_checksum;
+        %
+        %             % TODO: figure out when and where is best to do this
+        %             obj.validateTLE();
+        %         end
 
         function obj = set.TLELine1(obj, line_str)
 
@@ -78,10 +78,10 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
             if line_is_valid
                 obj.TLELine1 = line_str;
             else
-                warning("Unable to set Line 1 of a TLE ")
+                % warning("Unable to set Line 1 of a TLE ")
             end
         end
-        
+
         function obj = set.TLELine2(obj, line_str)
 
             % Check if the inputted line has a valid format before setting
@@ -89,7 +89,7 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
             if line_is_valid
                 obj.TLELine2 = line_str;
             else
-                warning("Unable to set Line 2 of a TLE")
+                % warning("Unable to process a TLE")
             end
         end
 
@@ -108,30 +108,30 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
                 if checksum_1_is_valid && checksum_2_is_valid
                     value = true;
                 end
-                if ~checksum_1_is_valid 
+                if ~checksum_1_is_valid
                     % warning("The checksum of Line 1 is invalid, the data in the TLE might have been lost.")
                     value = false;
                 end
-                if ~checksum_2_is_valid 
+                if ~checksum_2_is_valid
                     % warning("The checksum of Line 2 is invalid, the data in the TLE might have been lost.")
                     value = false;
                 end
             end
         end
 
-        function value = get.FormatValid(obj)
+        function isvalid = get.FormatValid(obj)
             % If both lines are empty -> formats aren't valid
             % Otherwise -> formats are valid
             if isempty(obj.TLELine1) || isempty(obj.TLELine2)
-                value = false;
+                isvalid = false;
             else
-                value = true;
+                isvalid = true;
             end
         end
 
         function is_valid = validateLine1Format(~, line)
             is_valid = true;
-             
+
             %% Basic length and format check
             TLE_length = 69;
             TLE_input_length = strlength(line);
@@ -154,7 +154,8 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
 
             for i = 1:num_empty_spaces
                 if ~isspace(line(empty_space_columns(i)))
-                    warning("Column %d in Line 1 is not empty \n", empty_space_columns(i))
+                    warning("Column %d in Line 1 is not empty.", empty_space_columns(i))
+                    warning("Unable to load the TLE with Line 1: '%s'", line)
                     is_valid = false;
                     return
                 end
@@ -167,6 +168,7 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
             for i = 1:num_sat_num_columns
                 if ~isstrprop(line(sat_num_columns(i)), "digit") || isempty(line(sat_num_columns(i)))
                     warning("The satellite catalog number must contain numbers and cannot be empty. Columns 3 through 7, Line 1.")
+                    warning("Unable to load the TLE with Line 1: '%s'", line)
                     is_valid = false;
                     return
                 end
@@ -174,10 +176,11 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
 
             %% Check for classification
             class_column = 8;
-            
+
             if line(class_column) == 'U' || line(class_column) == 'C' || line(class_column) == 'S'
             else
                 warning("Unrecognized classification of satellite. Column 8, Line 1.")
+                warning("Unable to load the TLE with Line 1: '%s'", line)
                 is_valid = false;
                 return
             end
@@ -194,25 +197,28 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
 
             % Manage bad inputs
             wrong_input_yr = any(~isstrprop(line(intl_designator_yr_columns), "digit"));
-            wrong_input_num = any(~isstrprop(line(intl_designator_num_columns), "digit")); 
+            wrong_input_num = any(~isstrprop(line(intl_designator_num_columns), "digit"));
             wrong_input_piece = any(isstrprop(line(intl_designator_piece_columns), "punct")) || ...
-                 any(isstrprop(line(intl_designator_piece_columns), "digit")) || ... 
-                 all(isstrprop(line(intl_designator_piece_columns), "wspace"));
+                any(isstrprop(line(intl_designator_piece_columns), "digit")) || ...
+                all(isstrprop(line(intl_designator_piece_columns), "wspace"));
 
             % If one exists, the others cannot be empty
             if intl_designator_yr_exists || intl_designator_num_exists || intl_designator_piece_exists
                 if wrong_input_yr
                     warning("The launch year must be a numerical value and cannot be empty. Columns 10 through 11, Line 1.")
+                    warning("Unable to load the TLE with Line 1: '%s'", line)
                     is_valid = false;
                     return
                 end
                 if wrong_input_num
                     warning("The launch number of the year must be a numerical value and cannot be empty. Columns 12 through 14, Line 1.")
+                    warning("Unable to load the TLE with Line 1: '%s'", line)
                     is_valid = false;
                     return
                 end
                 if wrong_input_piece
                     warning("The piece of the launch must contain letters and cannot be empty. Columns 15 through 17, Line 1.")
+                    warning("Unable to load the TLE with Line 1: '%s'", line)
                     is_valid = false;
                     return
                 end
@@ -228,11 +234,13 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
 
             if wrong_input_epoch_yr
                 warning("The Epoch year must be a numerical value. Columns 19 through 20, Line 1.")
+                warning("Unable to load the TLE with Line 1: '%s'", line)
                 is_valid = false;
                 return
             end
             if wrong_input_epoch_day
                 warning("The Epoch day must be a numerical value. Columns 21 through 32, Line 1.")
+                warning("Unable to load the TLE with Line 1: '%s'", line)
                 is_valid = false;
                 return
             end
@@ -248,23 +256,26 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
 
             if wrong_input_first_d
                 warning("The first derivative of mean motion must be a single numerical value. Columns 34 through 43, Line 1.")
+                warning("Unable to load the TLE with Line 1: '%s'", line)
                 is_valid = false;
                 return
             end
             if wrong_input_second_d
                 warning("The second derivative of mean motion cannot include letters. Columns 45 through 52, Line 1.")
+                warning("Unable to load the TLE with Line 1: '%s'", line)
                 is_valid = false;
                 return
             end
 
             %% Check for Drag Term
             drag_term_columns = 54:61;
-            
+
             % Manage bad inputs
             wrong_input_drag = any(isstrprop(line(drag_term_columns), "alpha"));
 
             if wrong_input_drag
                 warning("The drag term cannot include letters. Columns 54 through 61, Line 1.")
+                warning("Unable to load the TLE with Line 1: '%s'", line)
                 is_valid = false;
                 return
             end
@@ -277,6 +288,7 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
 
             if wrong_input_ephemeris
                 warning("The ephemeris type must be 0. Column 63, Line 1.")
+                warning("Unable to load the TLE with Line 1: '%s", line)
                 is_valid = false;
                 return
             end
@@ -290,7 +302,17 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
 
             if wrong_input_element
                 warning("The element set number must be a numerical value. Column 65 through 68, Line 1.")
+                warning("Unable to load the TLE with Line 1: '%s", line)
                 is_valid = false;
+                return
+            end
+
+            %% Chek for checksum
+            checksum = str2double(line(end));
+
+            % Verify extracted checksum
+            if ~isfloat(checksum) || isnan(checksum)
+                warning("The checksum must be a numerical value. Column 69, Line 1 of TLE with Line 1: '%s'", line)
                 return
             end
         end
@@ -322,7 +344,8 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
 
             for i = 1:num_empty_spaces
                 if ~isspace(line(empty_space_columns(i)))
-                    warning("Column %d in Line 2 is not empty \n", empty_space_columns(i))
+                    warning("Column %d in Line 2 is not empty.", empty_space_columns(i))
+                    warning("Unable to load the TLE with Line 2: '%s'", line)
                     is_valid = false;
                     return
                 end
@@ -335,6 +358,7 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
             for i = 1:num_sat_num_columns
                 if ~isstrprop(line(sat_num_columns(i)), "digit") || isempty(line(sat_num_columns(i)))
                     warning("The satellite catalog number must contain numbers and cannot be empty. Columns 3 through 7, Line 2.")
+                    warning("Unable to load the TLE with Line 2: '%s'", line)
                     is_valid = false;
                     return
                 end
@@ -349,6 +373,7 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
 
             if wrong_input_inclination
                 warning("The inclination must be a numerical value. Columns 9 through 16, Line 2.")
+                warning("Unable to load the TLE with Line 2: '%s'", line)
                 is_valid = false;
                 return
             end
@@ -362,6 +387,7 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
 
             if wrong_input_raan
                 warning("The right ascension of the ascending node must be a numerical value. Columns 18 through 25, Line 2.")
+                warning("Unable to load the TLE with Line 2: '%s'", line)
                 is_valid = false;
                 return
             end
@@ -375,6 +401,7 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
 
             if wrong_input_ecc
                 warning("The eccentricity must be a numerical value. Columns 27 through 33, Line 2.")
+                warning("Unable to load the TLE with Line 2: '%s'", line)
                 is_valid = false;
                 return
             end
@@ -388,6 +415,7 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
 
             if wrong_input_arg_perigee
                 warning("The argument of perigee must be a numerical value. Columns 35 through 42, Line 2.")
+                warning("Unable to load the TLE with Line 2: '%s'", line)
                 is_valid = false;
                 return
             end
@@ -401,6 +429,7 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
 
             if wrong_input_mean_anomaly
                 warning("The mean anomaly must be a numerical value. Columns 44 through 51, Line 2.")
+                warning("Unable to load the TLE with Line 2: '%s'", line)
                 is_valid = false;
                 return
             end
@@ -414,6 +443,7 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
 
             if wrong_input_mean_motion
                 warning("The mean motion must be a numerical value. Columns 53 through 63, Line 2.")
+                warning("Unable to load the TLE with Line 2: '%s'", line)
                 is_valid = false;
                 return
             end
@@ -427,6 +457,7 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
 
             if wrong_input_rev_num
                 warning("The revolution number at epoch must be a numerical value. Columns 64 through 68, Line 2.")
+                warning("Unable to load the TLE with Line 2: '%s'", line)
                 is_valid = false;
                 return
             end
@@ -436,7 +467,7 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
 
             % Verify extracted checksum
             if ~isfloat(checksum) || isnan(checksum)
-                warning("The checksum must be a numerical value. Column 69, Line %s. \n", line(1))
+                warning("The checksum must be a numerical value. Column 69, Line 2 of TLE with Line 2: %s", line)
                 return
             end
         end
@@ -446,7 +477,7 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
             % TODO: port/rewrite from current app's validate_TLE function
             % Booleans to output
             line_is_valid = false;
-    
+
             % Extract checksum from lines
             checksum = str2double(line(end));
 
@@ -484,7 +515,7 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
                 % Extract orbital information from TLE
                 % TODO
                 % Line 1
-%                 app. = name   
+                %                 app. = name
                 obj.CatalogNumber = str2double(obj.TLELine1(3:7));
                 obj.Classification = obj.TLELine1(8);
                 obj.LaunchYearDesignator = str2double(obj.TLELine1(10:11));
@@ -509,7 +540,7 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
                 obj.RevolutionNoAtEpoch = str2double(obj.TLELine2(64:68));
                 obj.ChecksumTwo = str2double(obj.TLELine2(69));
 
-                % Get checksum 
+                % Get checksum
                 obj.ChecksumsValid;
             end
         end

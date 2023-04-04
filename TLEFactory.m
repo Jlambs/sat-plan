@@ -25,8 +25,8 @@ classdef TLEFactory < handle
             for i = 1:total_lines
                 % Get line
                 line = TLE_lines{i};
-                
-                if ~isempty(line)
+
+                if ~isempty(line) && length(line) >= 2
                     % Determine first and second characters
                     first_char = line(1);
                     second_char = line(2);
@@ -103,131 +103,188 @@ classdef TLEFactory < handle
             end
 
             % If the lines matrices size's don't match, abort mission
+            % Has specific error messages
             if numel(line_1_mat) ~= numel(line_2_mat)
                 warning("There is one or more TLE lines missing. Couldn't load file.")
                 new_TLE_output = '';
                 return
+            elseif numel(line_1_mat) ~= num_of_TLEs || numel(line_2_mat) ~= num_of_TLEs
+                for i = 1:num_of_TLEs
+                    if isequal(names_mat(i), '') && numel(names_mat) == 2
+                        warning("The name of the TLE must go before Line 1 if it has one.")
+                        new_TLE_output = '';
+                        return
+                    else
+                        warning("The name of the TLE must go before Line 1 of each TLE if they have one. There is an extra TLE name with no lines.")
+                        new_TLE_output = '';
+                        return
+                    end
+                end
+            else
+                for i = 1:num_of_TLEs
+                    if length(char(line_1_mat(i))) ~= 69
+                        warning("Line 1 must have 69 characters. Modify the line: '%s'", line_1_mat(i))
+                        new_TLE_output = '';
+                        return
+                    elseif length(char(line_2_mat(i))) ~= 69
+                        warning("Line 2 must have 69 characters. Modify the line: '%s'", line_2_mat(i))
+                        new_TLE_output = '';
+                        return
+                    end
+                end
             end
 
-            % For loop variables
-            TLE_output_number = 1;
-            TLEs_found = 1;
-            TLE_found = 0;
+            % If all three matrices are empty -> file is empty or incorrect
+            % format
+            if isequal(names_mat, '') && isequal(line_1_mat, '') && isequal(line_2_mat, '')
+                % Specific Error messages
+                if isequal(TLE_to_load, '')
+                    warning("Unable to recognize the format of the file. Could not find any TLE.")
+                    new_TLE_output = '';
+                else
+                    warning("Unable to recognize the format of the file. Could not find %s's TLE.", TLE_to_load)
+                    new_TLE_output = '';
+                end
 
-            for i = 1:num_of_TLEs
+                % If either line is empty -> file is empty or incorrect
+                % format
+            elseif isequal(line_1_mat, '') || isequal(line_2_mat, '')
+                % Specific Error messages
+                if isequal(TLE_to_load, '')
+                    warning("Unable to recognize the format of the file. Could not find any TLE.")
+                    new_TLE_output = '';
+                else
+                    warning("Unable to recognize the format of the file. Could not find %s's TLE.", TLE_to_load)
+                    new_TLE_output = '';
+                end
 
-                % Determine which satellite to load from file
-                sat_name = strtrim(char(names_mat(i)));
+            else
 
-                line_1 = char(line_1_mat(i));
-                sat_num = line_1(3:7);
+                % For loop variables
+                TLE_output_number = 1;
+                TLEs_found = 1;
+                TLE_found = 0;
 
-                if isempty(TLE_to_load)
-                    % Create objects
-                    new_TLE = ['TLE_Number_', num2str(i)];
-                    eval([new_TLE, ' = TLE();']);
+                for i = 1:num_of_TLEs
 
-                    % If ignore checksums is clicked
-                    if ignore_checksums
-                        eval([new_TLE, '.IgnoreChecksums = ignore_checksums;']);
-                    end
+                    % Determine which satellite to load from file
+                    sat_name = strtrim(char(names_mat(i)));
 
-                    % Create the TLE
-                    eval([new_TLE, '.SatelliteName = strtrim(names_mat(i));']);
-                    eval([new_TLE, '.TLELine1 = line_1_mat(i);']);
-                    eval([new_TLE, '.TLELine2 = line_2_mat(i);']);
+                    line_1 = char(line_1_mat(i));
+                    sat_num = line_1(3:7);
 
-                    % If name of satellite is a placeholder, replace the
-                    % placeholder with the satellite number 
-                    name = eval([new_TLE, '.SatelliteName;']);
-
-                    if isempty(name)
-                        eval([new_TLE, '.SatelliteName = strtrim(sat_num);']);
-                    end                    
-
-                    % Notifies the user if the checksum is invalid. Still
-                    % lets the user set the lines of the TLE
-                    checksums_valid = eval([new_TLE, '.ChecksumsValid']);
-
-                    % If either line is invalid, delete the tle. Otherwise,
-                    % create and populate the TLE
-                    if isempty(eval([new_TLE, '.TLELine1'])) || isempty(eval([new_TLE, '.TLELine2']))
+                    if isempty(TLE_to_load)
+                        % Create objects
+                        new_TLE = ['TLE_Number_', num2str(i)];
                         eval([new_TLE, ' = TLE();']);
-                    else
+
+                        % If ignore checksums is clicked
+                        if ignore_checksums
+                            eval([new_TLE, '.IgnoreChecksums = ignore_checksums;']);
+                        end
+
+                        % Create the TLE
+                        eval([new_TLE, '.SatelliteName = strtrim(names_mat(i));']);
+                        eval([new_TLE, '.TLELine1 = line_1_mat(i);']);
+                        eval([new_TLE, '.TLELine2 = line_2_mat(i);']);
+
+                        % If name of satellite is a placeholder, replace the
+                        % placeholder with the satellite number
+                        name = eval([new_TLE, '.SatelliteName;']);
+
+                        if isempty(name)
+                            eval([new_TLE, '.SatelliteName = strtrim(sat_num);']);
+                        end
+
+                        % Notifies the user if the checksum is invalid. Still
+                        % lets the user set the lines of the TLE
+                        checksums_valid = eval([new_TLE, '.ChecksumsValid']);
+
+                        % If either line is invalid, delete the tle. Otherwise,
+                        % create and populate the TLE
+                        if isempty(eval([new_TLE, '.TLELine1'])) || isempty(eval([new_TLE, '.TLELine2']))
+                            eval([new_TLE, ' = TLE();']);
+                        else
+
+                            % Assign all variables based on the valid TLE
+                            eval([new_TLE, ' = ', new_TLE, '.assignVariablesFromStoredTLELines;']) % This somehow works
+
+                            if checksums_valid
+                            else
+                                checksum_1_is_valid = eval([new_TLE, '.validateChecksum(cell2mat(line_1_mat(i)))']);
+                                checksum_2_is_valid = eval([new_TLE, '.validateChecksum(cell2mat(line_2_mat(i)))']);
+                                if ~checksum_1_is_valid
+                                    warning("The checksum of Line 1 in the %s TLE is invalid, the data in the TLE might have been lost.", eval([new_TLE, '.SatelliteName']))
+                                end
+                                if ~checksum_2_is_valid
+                                    warning("The checksum of Line 2 in the %s TLE is invalid, the data in the TLE might have been lost.", eval([new_TLE, '.SatelliteName']))
+                                end
+                            end
+
+                            % This is the best way I managed to do this, I think it's
+                            % worth the error message
+                            new_TLE_output(TLE_output_number, 1) = eval(['TLE_Number_', num2str(i)]);
+
+                            TLE_output_number = TLE_output_number + 1;
+
+                            TLE_found = 1;
+                        end
+                    elseif strcmp(TLE_to_load, sat_num) || strcmp(TLE_to_load, sat_name)
+                        % If the user wants only specific TLEs from file
+
+                        % Create objects
+                        new_TLE = ['TLE_Number_', num2str(TLEs_found)];
+                        eval([new_TLE, ' = TLE();']);
+
+                        % If ignore checksums is clicked
+                        if ignore_checksums
+                            eval([new_TLE, '.IgnoreChecksums = ignore_checksums;']);
+                        end
+
+                        eval([new_TLE, '.SatelliteName = names_mat(i);']);
+                        eval([new_TLE, '.TLELine1 = line_1_mat(i);']);
+                        eval([new_TLE, '.TLELine2 = line_2_mat(i);']);
 
                         % Assign all variables based on the valid TLE
                         eval([new_TLE, ' = ', new_TLE, '.assignVariablesFromStoredTLELines;']) % This somehow works
 
+                        % Notifies the user if the checksum is invalid. Still
+                        % lets the user set the lines of the TLE
+                        checksums_valid = eval([new_TLE, '.ChecksumsValid']);
 
-                    if checksums_valid
-                    else
-                        checksum_1_is_valid = eval([new_TLE, '.validateChecksum(cell2mat(line_1_mat(i)))']);
-                        checksum_2_is_valid = eval([new_TLE, '.validateChecksum(cell2mat(line_2_mat(i)))']);
-                        if ~checksum_1_is_valid
-                            warning("The checksum of Line 1 in the %s TLE is invalid, the data in the TLE might have been lost.", names_mat(i))
+                        if checksums_valid
+                        else
+                            checksum_1_is_valid = eval([new_TLE, '.validateChecksum(cell2mat(line_1_mat(i)))']);
+                            checksum_2_is_valid = eval([new_TLE, '.validateChecksum(cell2mat(line_2_mat(i)))']);
+                            if ~checksum_1_is_valid
+                                warning("The checksum of Line 1 in the %s TLE is invalid, the data in the TLE might have been lost.", names_mat(i))
+                            end
+                            if ~checksum_2_is_valid
+                                warning("The checksum of Line 2 in the %s TLE is invalid, the data in the TLE might have been lost.", names_mat(i))
+                            end
                         end
-                        if ~checksum_2_is_valid
-                            warning("The checksum of Line 2 in the %s TLE is invalid, the data in the TLE might have been lost.", names_mat(i))
-                        end
-                    end
 
                         % This is the best way I managed to do this, I think it's
                         % worth the error message
-                        new_TLE_output(TLE_output_number, 1) = eval(['TLE_Number_', num2str(i)]);
+                        new_TLE_output(TLEs_found, 1) = eval(['TLE_Number_', num2str(TLEs_found)]);
 
-                        TLE_output_number = TLE_output_number + 1;
+                        TLEs_found = TLEs_found + 1;
 
                         TLE_found = 1;
                     end
-                elseif strcmp(TLE_to_load, sat_num) || strcmp(TLE_to_load, sat_name)
-                    % If the user wants only specific TLEs from file
-
-                    % Create objects
-                    new_TLE = ['TLE_Number_', num2str(TLEs_found)];
-                    eval([new_TLE, ' = TLE();']);
-
-                    % If ignore checksums is clicked
-                    if ignore_checksums
-                        eval([new_TLE, '.IgnoreChecksums = ignore_checksums;']);
-                    end
-
-                    eval([new_TLE, '.SatelliteName = names_mat(i);']);
-                    eval([new_TLE, '.TLELine1 = line_1_mat(i);']);
-                    eval([new_TLE, '.TLELine2 = line_2_mat(i);']);
-
-                    % Assign all variables based on the valid TLE
-                    eval([new_TLE, ' = ', new_TLE, '.assignVariablesFromStoredTLELines;']) % This somehow works
-
-                    % Notifies the user if the checksum is invalid. Still
-                    % lets the user set the lines of the TLE
-                    checksums_valid = eval([new_TLE, '.ChecksumsValid']);
-
-                    if checksums_valid
-                    else
-                        checksum_1_is_valid = eval([new_TLE, '.validateChecksum(cell2mat(line_1_mat(i)))']);
-                        checksum_2_is_valid = eval([new_TLE, '.validateChecksum(cell2mat(line_2_mat(i)))']);
-                        if ~checksum_1_is_valid
-                            warning("The checksum of Line 1 in the %s TLE is invalid, the data in the TLE might have been lost.", names_mat(i))
-                        end
-                        if ~checksum_2_is_valid
-                            warning("The checksum of Line 2 in the %s TLE is invalid, the data in the TLE might have been lost.", names_mat(i))
-                        end
-                    end
-
-                    % This is the best way I managed to do this, I think it's
-                    % worth the error message
-                    new_TLE_output(TLEs_found, 1) = eval(['TLE_Number_', num2str(TLEs_found)]);
-
-                    TLEs_found = TLEs_found + 1;
-
-                    TLE_found = 1;
                 end
-            end
 
-            % If the TLE was not found, error
-            if ~TLE_found
-                warning('Unable to load the TLE in the file')
-                new_TLE_output = '';
+                % If the TLE was not found, error
+                if ~TLE_found
+                    % Specific error messages
+                    if isequal(TLE_to_load, '')
+                        warning("Unable to find a TLE in the file.")
+                        new_TLE_output = '';
+                    else
+                        warning("Unable to find %s's TLE in the file.", TLE_to_load)
+                        new_TLE_output = '';
+                    end
+                end
             end
         end
 
@@ -359,8 +416,6 @@ classdef TLEFactory < handle
             new_TLE_object.ElementSetNum = '';
             new_TLE_object.ChecksumOne = '';
 
-
-        
         end
 
         % See https://www.mathworks.com/help/satcom/ref/matlabshared.satellitescenario.satellite.orbitalelements.html
