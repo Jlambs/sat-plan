@@ -295,7 +295,23 @@ classdef TLEHandler < handle
         end
 
         function satellite_table = generateLoadedSatelliteTable()
+            % TODO
             satellite_table = table();
+        end
+
+        function addSunSynchronousOrbit(obj)
+
+            obj.TLEFactory.addSunSynchOrbit();
+
+        end
+
+        function addGeoStationaryOrbit(obj)
+
+            keplerian_elems  = [1,2,3];
+            
+            new_TLE_obj = TLE();
+            new_TLE_obj.Inclination = keplerian_elems(1);
+
         end
 
     end

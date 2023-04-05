@@ -24,7 +24,6 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
         Epoch datetime = datetime()  % TODO: better value for this
         EpochYear double = 0   % integer? necessary?
         EpochDay double = 0  % necessary?
-        Argument
         % Keplerian elements
         % FIXME: put units in variable names?
         SemiMajorAxis double = 0
@@ -102,6 +101,17 @@ classdef TLE %< handle  % TODO: figure out if this is best defined as a value cl
         function is_valid = validateLine1Format(obj, line_1_text)
             % TODO: port/rewrite from current app's validate_TLE function
             is_valid = true;
+        end
+
+        function is_valid = validateLine2Format(obj, line_1_text)
+            % TODO: port/rewrite from current app's validate_TLE function
+            is_valid = true;
+        end
+
+        function is_TLE_valid = validateTLEFormat(obj, line_1_text, line_2_text)
+            is_line_1_valid = obj.validateLine1Format(line_1_text);
+            is_line_2_valid = obj.validateLine2Format(line_1_text);
+            is_TLE_valid = is_line_1_valid && is_line_2_valid;
         end
 
         function is_valid = validateChecksum(obj, line_text)
