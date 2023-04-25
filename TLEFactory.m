@@ -32,12 +32,12 @@ classdef TLEFactory < handle
                     second_char = line(2);
 
                     if isstrprop(first_char, "alpha") || (isstrprop(first_char, "digit") && ~isstrprop(second_char, "wspace"))
-                        if numel(line_1_mat)^2 > numel(line_1_mat)^2
+                        if numel(line_1_mat) > numel(line_1_mat)
                             % Line 1 is bigger so the names matrix's size should be based on
                             % Line 1's size
                             num_of_TLEs = num_of_TLE_line_1;
 
-                        elseif numel(line_1_mat)^2 == numel(line_1_mat)^2
+                        elseif numel(line_1_mat) == numel(line_1_mat)
                             % Line 1 is the same size as Line 2. Either works for indexing
                             num_of_TLEs = num_of_TLE_line_1;
 
@@ -389,34 +389,34 @@ classdef TLEFactory < handle
             end
         end
 
-        function new_TLE_object = createTLEFromKeplerianElements(~, satellite_name, semi_major_axis, eccentricity, inclination, RAAN, arg_of_periapsis, mean_motion)
-            % TODO: allow creating multiple TLE objects if inputs are
-            % vectors
-           
-            new_TLE_object = TLE();
-            new_TLE_object.SatelliteName = satellite_name;
-            new_TLE_object.SemiMajorAxis = semi_major_axis;
-            new_TLE_object.Eccentricity = eccentricity;
-            new_TLE_object.Inclination = inclination;
-            new_TLE_object.RAAN = RAAN;
-            new_TLE_object.MeanOrbitalPeriod = mean_motion;
-            new_TLE_object.ArgumentOfPeriapsis = arg_of_periapsis;
-
-            new_TLE_object.CatalogNumber = '';
-            new_TLE_object.Classification = '';
-            new_TLE_object.LaunchYearDesignator = '';
-            new_TLE_object.LaunchNumberDesignator = '';
-            new_TLE_object.LaunchPieceDesignator = '';
-            new_TLE_object.EpochYear = '';
-            new_TLE_object.EpochDay = '';
-            new_TLE_object.FirstDerivofMeanMotion = '';
-            new_TLE_object.SecondDerivofMeanMotion = '';
-            new_TLE_object.BStar = '';
-            new_TLE_object.EphemerisType = '';
-            new_TLE_object.ElementSetNum = '';
-            new_TLE_object.ChecksumOne = '';
-
-        end
+        % function new_TLE_object = createTLEFromKeplerianElements(~, satellite_name, semi_major_axis, eccentricity, inclination, RAAN, arg_of_periapsis, mean_motion)
+        %     % TODO: allow creating multiple TLE objects if inputs are
+        %     % vectors
+        % 
+        %     new_TLE_object = TLE();
+        %     new_TLE_object.SatelliteName = satellite_name;
+        %     new_TLE_object.SemiMajorAxis = semi_major_axis;
+        %     new_TLE_object.Eccentricity = eccentricity;
+        %     new_TLE_object.Inclination = inclination;
+        %     new_TLE_object.RAAN = RAAN;
+        %     new_TLE_object.MeanOrbitalPeriod = mean_motion;
+        %     new_TLE_object.ArgumentOfPeriapsis = arg_of_periapsis;
+        % 
+        %     new_TLE_object.CatalogNumber = '';
+        %     new_TLE_object.Classification = '';
+        %     new_TLE_object.LaunchYearDesignator = '';
+        %     new_TLE_object.LaunchNumberDesignator = '';
+        %     new_TLE_object.LaunchPieceDesignator = '';
+        %     new_TLE_object.EpochYear = '';
+        %     new_TLE_object.EpochDay = '';
+        %     new_TLE_object.FirstDerivofMeanMotion = '';
+        %     new_TLE_object.SecondDerivofMeanMotion = '';
+        %     new_TLE_object.BStar = '';
+        %     new_TLE_object.EphemerisType = '';
+        %     new_TLE_object.ElementSetNum = '';
+        %     new_TLE_object.ChecksumOne = '';
+        % 
+        % end
 
         % See https://www.mathworks.com/help/satcom/ref/matlabshared.satellitescenario.satellite.orbitalelements.html
         function [new_TLE_object, is_valid] = createTLEFromSGP4Elements(~, satellite_name, semi_major_axis, eccentricity, inclination, RAAN, arg_of_periapsis, mean_anomaly, epoch, B_star, mean_orbital_period)
