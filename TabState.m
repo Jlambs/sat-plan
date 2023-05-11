@@ -1,7 +1,5 @@
 classdef TabState
-    % TABSTATE All properties of a tab state, including description, color,
-    % and id. This class has no methods, so perhaps should be changed to a
-    % struct in the future.
+    % TABSTATE All properties of a tab state.
     %   Detailed explanation goes here
     
     properties
